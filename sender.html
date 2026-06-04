@@ -15,21 +15,21 @@
             color: white; 
         }
 
-        /* 1. Force the video to act as a full-screen background */
+        /* 1. Full-screen video background */
         video {
             position: absolute;
             top: 0; 
             left: 0;
             width: 100vw; 
             height: 100vh;
-            object-fit: cover; /* Fills the screen without stretching */
+            object-fit: cover; 
             z-index: 1;
         }
 
-        /* 2. Float the UI on top with a blurred, glass-like background */
+        /* 2. The Main UI Panel */
         .ui-container {
             position: absolute;
-            top: 30px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -41,6 +41,7 @@
             width: 85%;
             max-width: 350px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease;
         }
 
         .id-box { 
@@ -53,7 +54,7 @@
             letter-spacing: 2px;
         }
 
-        button { 
+        .action-btn { 
             padding: 15px; 
             font-size: 18px; 
             font-weight: bold;
@@ -67,15 +68,62 @@
 
         p { margin: 0; font-size: 14px; color: #ddd;}
         h2 { margin: 0 0 10px 0; font-size: 20px;}
+
+        /* 3. The Toggle UI Button (Top Right) */
+        .toggle-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 20; /* Keep above everything */
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 4. The Camera Viewfinder Pointer */
+        .viewfinder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            z-index: 5; /* Keep below UI but above video */
+            pointer-events: none; /* Crucial: allows you to click buttons THROUGH the frame */
+        }
+        
+        /* The center crosshair of the viewfinder */
+        .viewfinder::before, .viewfinder::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .viewfinder::before { width: 30px; height: 2px; } /* Horizontal line */
+        .viewfinder::after { width: 2px; height: 30px; } /* Vertical line */
+
     </style>
 </head>
 <body>
 
-    <div class="ui-container">
+    <button id="toggleUiBtn" class="toggle-btn">👁️ Hide</button>
+
+    <div class="viewfinder"></div>
+
+    <div class="ui-container" id="mainUi">
         <h2>SpyCam Sender</h2>
         <p>Type this ID into your laptop:</p>
         <div class="id-box" id="myId">Loading...</div>
-        <button id="startBtn">Start Camera</button>
+        <button id="startBtn" class="action-btn">Start Camera</button>
     </div>
 
     <video id="localVideo" autoplay playsinline muted></video>
@@ -83,14 +131,17 @@
     <script>
         const localVideo = document.getElementById('localVideo');
         const startBtn = document.getElementById('startBtn');
+        const toggleUiBtn = document.getElementById('toggleUiBtn');
+        const mainUi = document.getElementById('mainUi');
         const peer = new Peer();
 
+        // Show the ID once connected to the PeerJS server
         peer.on('open', (id) => {
             document.getElementById('myId').innerText = id;
         });
 
+        // Start Camera Logic
         startBtn.addEventListener('click', () => {
-            // Request ultra-high quality, low framerate video for crisp screenshots
             navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: { ideal: "environment" },
@@ -102,9 +153,7 @@
             })
             .then((stream) => {
                 localVideo.srcObject = stream;
-                
-                // Hide only the button, keep the ID visible on screen!
-                startBtn.style.display = 'none';
+                startBtn.style.display = 'none'; // Hide the start button
 
                 peer.on('call', (call) => {
                     call.answer(stream);
@@ -115,6 +164,21 @@
                 alert('Camera error: Ensure permissions are granted.');
                 console.error(err);
             });
+        });
+
+        // Hide/Show UI Logic
+        let uiVisible = true;
+        toggleUiBtn.addEventListener('click', () => {
+            uiVisible = !uiVisible;
+            if (uiVisible) {
+                mainUi.style.opacity = '1';
+                mainUi.style.pointerEvents = 'auto'; // allow clicking inside UI
+                toggleUiBtn.innerText = '👁️ Hide';
+            } else {
+                mainUi.style.opacity = '0';
+                mainUi.style.pointerEvents = 'none'; // disable clicks when hidden
+                toggleUiBtn.innerText = '👁️ Show';
+            }
         });
     </script>
 </body>

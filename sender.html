@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Camera (Sender)</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; margin: 0; padding: 20px; }
+        video { width: 100%; max-width: 400px; border-radius: 8px; background: #000; margin-top: 20px; }
+        .id-box { background: #444; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-top: 10px; letter-spacing: 2px;}
+    </style>
+</head>
+<body>
+
+    <h2>Phone Camera Sender</h2>
+    <p>Type this ID into your laptop to connect:</p>
+    <div class="id-box" id="myId">Generating ID...</div>
+
+    <video id="localVideo" autoplay playsinline muted></video>
+
+    <script>
+        const localVideo = document.getElementById('localVideo');
+        
+        // Initialize PeerJS (Connects to their free cloud server)
+        const peer = new Peer();
+
+        // When successfully connected to the cloud, show our ID
+        peer.on('open', (id) => {
+            document.getElementById('myId').innerText = id;
+        });
+
+        // 1. Start the phone's back camera
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { ideal: "environment" } }, 
+            audio: false 
+        })
+        .then((stream) => {
+            localVideo.srcObject = stream;
+
+            // 2. Wait for the laptop to call us
+            peer.on('call', (call) => {
+                // Answer the call automatically and send our camera stream!
+                call.answer(stream);
+                console.log("Connected to Laptop!");
+            });
+        })
+        .catch((err) => {
+            alert('Camera error: Make sure you are on HTTPS and granted permissions.');
+            console.error(err);
+        });
+    </script>
+</body>
+</html>

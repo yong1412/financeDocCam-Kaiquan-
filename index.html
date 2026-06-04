@@ -3,98 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webcam Viewer - Back Camera</title>
+    <title>SpyCam Hub</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            text-align: center;
         }
-        video {
-            background-color: #000;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 640px;
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
         }
-        .controls {
-            margin-top: 20px;
+
+        p {
+            color: #aaaaaa;
+            margin-bottom: 40px;
         }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
+
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        /* Styling the links to look like big clickable cards */
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            width: 250px;
+            text-decoration: none;
             color: white;
-            margin: 0 5px;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: #007bff;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: #bbbbbb;
+            line-height: 1.4;
+        }
+        
+        /* A different color for the receiver card for contrast */
+        .card.receiver:hover {
+            border-color: #28a745;
+        }
+        .card.receiver .card-title {
+            color: #28a745;
         }
     </style>
 </head>
 <body>
 
-    <h2>My Webcam (Back Camera)</h2>
-    
-    <video id="webcam" autoplay playsinline></video>
+    <h1>WebRTC Camera System</h1>
+    <p>Select the role for this device to continue.</p>
 
-    <div class="controls">
-        <button id="startBtn">Start Camera</button>
-        <button id="stopBtn">Stop Camera</button>
+    <div class="container">
+        
+        <a href="sender.html" class="card">
+            <div class="card-icon">📱</div>
+            <div class="card-title">Phone Camera</div>
+            <div class="card-desc">Open this on your phone to stream your back camera and generate an ID.</div>
+        </a>
+
+        <a href="receiver.html" class="card receiver">
+            <div class="card-icon">💻</div>
+            <div class="card-title">Laptop Monitor</div>
+            <div class="card-desc">Open this on your laptop to connect to the phone and take screenshots.</div>
+        </a>
+
     </div>
-
-    <script>
-        const videoElement = document.getElementById('webcam');
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        let currentStream = null;
-
-        // Function to start the webcam
-        async function startCamera() {
-            try {
-                // Request access to the BACK video camera
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" } } 
-                });
-                
-                // Assign the stream to the video element
-                videoElement.srcObject = stream;
-                currentStream = stream;
-                
-            } catch (error) {
-                console.error('Error accessing the webcam: ', error);
-                
-                // If the exact back camera fails, it gives an OverconstrainedError
-                if (error.name === 'OverconstrainedError') {
-                    alert('Your device does not support this exact camera constraint. Try removing the "exact" keyword in the code.');
-                } else {
-                    alert('Could not access the webcam. Please ensure you have granted permission and are on a secure HTTPS connection.');
-                }
-            }
-        }
-
-        // Function to stop the webcam
-        function stopCamera() {
-            if (currentStream) {
-                const tracks = currentStream.getTracks();
-                tracks.forEach(track => track.stop());
-                videoElement.srcObject = null;
-                currentStream = null;
-            }
-        }
-
-        // Event listeners for the buttons
-        startBtn.addEventListener('click', startCamera);
-        stopBtn.addEventListener('click', stopCamera);
-    </script>
 
 </body>
 </html>

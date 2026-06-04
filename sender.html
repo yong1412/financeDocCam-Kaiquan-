@@ -6,48 +6,115 @@
     <title>Phone Camera (Sender)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; margin: 0; padding: 20px; }
-        video { width: 100%; max-width: 400px; border-radius: 8px; background: #000; margin-top: 20px; }
-        .id-box { background: #444; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-top: 10px; letter-spacing: 2px;}
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: sans-serif; 
+            color: white; 
+        }
+
+        /* 1. Force the video to act as a full-screen background */
+        video {
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 100vw; 
+            height: 100vh;
+            object-fit: cover; /* Fills the screen without stretching */
+            z-index: 1;
+        }
+
+        /* 2. Float the UI on top with a blurred, glass-like background */
+        .ui-container {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 85%;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .id-box { 
+            background: rgba(255, 255, 255, 0.15); 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 26px; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            letter-spacing: 2px;
+        }
+
+        button { 
+            padding: 15px; 
+            font-size: 18px; 
+            font-weight: bold;
+            cursor: pointer; 
+            border: none; 
+            border-radius: 8px; 
+            background-color: #28a745; 
+            color: white; 
+            width: 100%;
+        }
+
+        p { margin: 0; font-size: 14px; color: #ddd;}
+        h2 { margin: 0 0 10px 0; font-size: 20px;}
     </style>
 </head>
 <body>
 
-    <h2>Phone Camera Sender</h2>
-    <p>Type this ID into your laptop to connect:</p>
-    <div class="id-box" id="myId">Generating ID...</div>
+    <div class="ui-container">
+        <h2>SpyCam Sender</h2>
+        <p>Type this ID into your laptop:</p>
+        <div class="id-box" id="myId">Loading...</div>
+        <button id="startBtn">Start Camera</button>
+    </div>
 
     <video id="localVideo" autoplay playsinline muted></video>
 
     <script>
         const localVideo = document.getElementById('localVideo');
-        
-        // Initialize PeerJS (Connects to their free cloud server)
+        const startBtn = document.getElementById('startBtn');
         const peer = new Peer();
 
-        // When successfully connected to the cloud, show our ID
         peer.on('open', (id) => {
             document.getElementById('myId').innerText = id;
         });
 
-        // 1. Start the phone's back camera
-        navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: { ideal: "environment" } }, 
-            audio: false 
-        })
-        .then((stream) => {
-            localVideo.srcObject = stream;
+        startBtn.addEventListener('click', () => {
+            // Request ultra-high quality, low framerate video for crisp screenshots
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 4096 }, 
+                    height: { ideal: 2160 },
+                    frameRate: { ideal: 5, max: 10 } 
+                }, 
+                audio: false 
+            })
+            .then((stream) => {
+                localVideo.srcObject = stream;
+                
+                // Hide only the button, keep the ID visible on screen!
+                startBtn.style.display = 'none';
 
-            // 2. Wait for the laptop to call us
-            peer.on('call', (call) => {
-                // Answer the call automatically and send our camera stream!
-                call.answer(stream);
-                console.log("Connected to Laptop!");
+                peer.on('call', (call) => {
+                    call.answer(stream);
+                    console.log("Connected to Laptop!");
+                });
+            })
+            .catch((err) => {
+                alert('Camera error: Ensure permissions are granted.');
+                console.error(err);
             });
-        })
-        .catch((err) => {
-            alert('Camera error: Make sure you are on HTTPS and granted permissions.');
-            console.error(err);
         });
     </script>
 </body>

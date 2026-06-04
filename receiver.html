@@ -6,14 +6,23 @@
     <title>Laptop Monitor (Receiver)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f0f0; margin: 0; padding: 20px; }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: inline-block; margin-bottom: 20px;}
-        input { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; margin-left: 10px;}
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
+        .controls { background: #333; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; margin-bottom: 20px;}
+        input { padding: 12px; font-size: 16px; border: none; border-radius: 6px; outline: none; width: 200px;}
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; background: #007bff; color: white; margin-left: 10px; transition: 0.2s;}
         button:hover { background: #0056b3; }
         #snapBtn { background: #28a745; margin-left: 20px; }
         #snapBtn:hover { background: #218838; }
-        video { width: 100%; max-width: 800px; background: #000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        
+        /* Display the incoming video nicely on the laptop */
+        video { 
+            width: 100%; 
+            max-width: 1280px; 
+            background: #000; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+            border: 2px solid #333;
+        }
     </style>
 </head>
 <body>
@@ -21,9 +30,9 @@
     <h2>Laptop Security Monitor</h2>
     
     <div class="controls">
-        <input type="text" id="phoneIdInput" placeholder="Enter Phone ID here">
-        <button id="connectBtn">Connect to Phone</button>
-        <button id="snapBtn">Take Screenshot</button>
+        <input type="text" id="phoneIdInput" placeholder="Enter Phone ID">
+        <button id="connectBtn">Connect</button>
+        <button id="snapBtn">📸 Take High-Res Screenshot</button>
     </div>
 
     <br>
@@ -33,47 +42,47 @@
     <canvas id="hiddenCanvas" style="display:none;"></canvas>
 
     <script>
-        const peer = new Peer(); // Initialize Laptop Peer
+        const peer = new Peer(); 
         const remoteVideo = document.getElementById('remoteVideo');
         
-        // Connect to the phone
         document.getElementById('connectBtn').addEventListener('click', () => {
             const phoneId = document.getElementById('phoneIdInput').value.trim();
             if (!phoneId) return alert("Please enter the Phone ID");
 
-            // WebRTC requires you to send a stream to initiate a call. 
-            // Since the laptop doesn't need to send video, we create an empty dummy stream.
+            // Create an empty dummy stream to initiate the WebRTC call
             const dummyCanvas = document.createElement('canvas');
             const dummyStream = dummyCanvas.captureStream();
 
-            // Call the phone ID
             const call = peer.call(phoneId, dummyStream);
 
-            // When the phone answers with its video stream, play it in the video tag
             call.on('stream', (phoneStream) => {
                 remoteVideo.srcObject = phoneStream;
             });
         });
 
-        // Screenshot Logic
+        // The Screenshot Engine
         document.getElementById('snapBtn').addEventListener('click', () => {
-            if (!remoteVideo.srcObject) return alert("No video stream connected!");
+            if (!remoteVideo.srcObject) return alert("No video stream connected yet!");
 
             const canvas = document.getElementById('hiddenCanvas');
             
-            // Match canvas size to the incoming video resolution
+            // Lock the canvas size to the incoming 4K/high-res video feed
             canvas.width = remoteVideo.videoWidth;
             canvas.height = remoteVideo.videoHeight;
             
-            // Draw the current frame
             const context = canvas.getContext('2d');
             context.drawImage(remoteVideo, 0, 0, canvas.width, canvas.height);
             
-            // Convert to an image and download
+            // Convert to PNG to avoid compression loss
             const dataURL = canvas.toDataURL('image/png');
+            
+            // Trigger automatic download
             const downloadLink = document.createElement('a');
             downloadLink.href = dataURL;
-            downloadLink.download = `cam-screenshot-${new Date().getTime()}.png`;
+            
+            // Format a nice filename with the current date/time
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            downloadLink.download = `SpyCam-${timestamp}.png`;
             
             document.body.appendChild(downloadLink);
             downloadLink.click();

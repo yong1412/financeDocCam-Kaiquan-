@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Viewer - Back Camera</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        video {
+            background-color: #000;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 640px;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>My Webcam (Back Camera)</h2>
+    
+    <video id="webcam" autoplay playsinline></video>
+
+    <div class="controls">
+        <button id="startBtn">Start Camera</button>
+        <button id="stopBtn">Stop Camera</button>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        let currentStream = null;
+
+        // Function to start the webcam
+        async function startCamera() {
+            try {
+                // Request access to the BACK video camera
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { exact: "environment" } } 
+                });
+                
+                // Assign the stream to the video element
+                videoElement.srcObject = stream;
+                currentStream = stream;
+                
+            } catch (error) {
+                console.error('Error accessing the webcam: ', error);
+                
+                // If the exact back camera fails, it gives an OverconstrainedError
+                if (error.name === 'OverconstrainedError') {
+                    alert('Your device does not support this exact camera constraint. Try removing the "exact" keyword in the code.');
+                } else {
+                    alert('Could not access the webcam. Please ensure you have granted permission and are on a secure HTTPS connection.');
+                }
+            }
+        }
+
+        // Function to stop the webcam
+        function stopCamera() {
+            if (currentStream) {
+                const tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+                videoElement.srcObject = null;
+                currentStream = null;
+            }
+        }
+
+        // Event listeners for the buttons
+        startBtn.addEventListener('click', startCamera);
+        stopBtn.addEventListener('click', stopCamera);
+    </script>
+
+</body>
+</html>

@@ -11,7 +11,10 @@
         video { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; }
         /* 2. The Main UI Panel */
         .ui-container { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); padding: 20px; border-radius: 15px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.3s ease; }
-        .id-box { background: rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-size: 26px; font-weight: bold; margin: 15px 0; letter-spacing: 2px; }
+        .id-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; }
+        .id-box { background: rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px; font-size: 26px; font-weight: bold; margin: 0; letter-spacing: 2px; }
+        .copy-btn { padding: 12px 15px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; background-color: #007bff; color: white; transition: 0.2s; }
+        .copy-btn:hover { background-color: #0056b3; }
         .action-btn { padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; background-color: #28a745; color: white; width: 100%; }
         p { margin: 0; font-size: 14px; color: #ddd; }
         h2 { margin: 0 0 10px 0; font-size: 20px; }
@@ -36,7 +39,10 @@
     <div class="ui-container" id="mainUi">
         <h2>SpyCam Sender</h2>
         <p>Type this ID into your laptop:</p>
-        <div class="id-box" id="myId">Loading...</div>
+        <div class="id-container">
+            <div class="id-box" id="myId">Loading...</div>
+            <button id="copyBtn" class="copy-btn">Copy</button>
+        </div>
         <button id="startBtn" class="action-btn">Start Camera</button>
     </div>
 
@@ -47,6 +53,7 @@
         const startBtn = document.getElementById('startBtn');
         const toggleUiBtn = document.getElementById('toggleUiBtn');
         const mainUi = document.getElementById('mainUi');
+        const copyBtn = document.getElementById('copyBtn');
         const peer = new Peer();
         let audioCtx;
 
@@ -59,19 +66,35 @@
         peer.on('connection', (conn) => {
             conn.on('data', (data) => {
                 if (data === 'screenshot' && audioCtx) {
-                    // Play a short confirmation beep sound
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch tone
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.start();
-                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    // Play a camera shutter sound (two rapid mechanical clicks)
+                    const playClick = (time, freq) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, time);
+                        osc.frequency.exponentialRampToValueAtTime(40, time + 0.05);
+                        gain.gain.setValueAtTime(1, time);
+                        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(time);
+                        osc.stop(time + 0.05);
+                    };
+                    playClick(audioCtx.currentTime, 300); // Shutter open
+                    playClick(audioCtx.currentTime + 0.08, 200); // Shutter close
                 }
             });
+        });
+
+        // Copy ID to clipboard
+        copyBtn.addEventListener('click', () => {
+            const idText = document.getElementById('myId').innerText;
+            if (idText !== 'Loading...') {
+                navigator.clipboard.writeText(idText).then(() => {
+                    copyBtn.innerText = 'Copied!';
+                    setTimeout(() => { copyBtn.innerText = 'Copy'; }, 2000);
+                });
+            }
         });
 
         // Start Camera Logic

@@ -6,48 +6,50 @@
     <title>Laptop Monitor (Receiver)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
-        .controls { background: #333; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; margin-bottom: 20px;}
-        input { padding: 12px; font-size: 16px; border: none; border-radius: 6px; outline: none; width: 200px;}
-        button { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; background: #007bff; color: white; margin-left: 10px; transition: 0.2s;}
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; height: 100vh; display: flex; flex-direction: row; }
+        .video-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .controls-container { width: 350px; background: #222; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 2px solid #333; box-sizing: border-box; }
+        .controls { background: #333; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 15px; width: 100%; box-sizing: border-box;}
+        input { padding: 12px; font-size: 16px; border: none; border-radius: 6px; outline: none; width: 100%; box-sizing: border-box; }
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; background: #007bff; color: white; transition: 0.2s; width: 100%; box-sizing: border-box;}
         button:hover { background: #0056b3; }
-        #snapBtn { background: #28a745; margin-left: 20px; }
+        #snapBtn { background: #28a745; }
         #snapBtn:hover { background: #218838; }
         
         /* Display the incoming video nicely on the laptop */
-        video { 
-            width: 100%; 
-            max-width: 1280px; 
-            background: #000; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
-            border: 2px solid #333;
-        }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 2px solid #333; }
+        h2 { margin-top: 0; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <h2>Laptop Security Monitor</h2>
-    
-    <div class="controls">
-        <input type="text" id="phoneIdInput" placeholder="Enter Phone ID">
-        <button id="connectBtn">Connect</button>
-        <button id="snapBtn">📸 Take High-Res Screenshot</button>
+    <div class="video-container">
+        <video id="remoteVideo" autoplay playsinline></video>
     </div>
 
-    <br>
-
-    <video id="remoteVideo" autoplay playsinline></video>
+    <div class="controls-container">
+        <h2>Laptop Monitor</h2>
+        
+        <div class="controls">
+            <input type="text" id="phoneIdInput" placeholder="Enter Phone ID">
+            <button id="connectBtn">Connect</button>
+            <button id="snapBtn">📸 Take High-Res Screenshot</button>
+        </div>
+    </div>
     
     <canvas id="hiddenCanvas" style="display:none;"></canvas>
 
     <script>
         const peer = new Peer(); 
         const remoteVideo = document.getElementById('remoteVideo');
+        let dataConnection;
         
         document.getElementById('connectBtn').addEventListener('click', () => {
             const phoneId = document.getElementById('phoneIdInput').value.trim();
             if (!phoneId) return alert("Please enter the Phone ID");
+
+            // Connect to send text data/signals alongside media
+            dataConnection = peer.connect(phoneId);
 
             // Create an empty dummy stream to initiate the WebRTC call
             const dummyCanvas = document.createElement('canvas');
@@ -73,6 +75,11 @@
             const context = canvas.getContext('2d');
             context.drawImage(remoteVideo, 0, 0, canvas.width, canvas.height);
             
+            // Send confirmation signal back to sender's phone
+            if (dataConnection && dataConnection.open) {
+                dataConnection.send('screenshot');
+            }
+            
             // Convert to PNG to avoid compression loss
             const dataURL = canvas.toDataURL('image/png');
             
@@ -87,6 +94,16 @@
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
+        });
+
+        // Spacebar to trigger taking a screenshot
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                // Ignore if the user is typing their Phone ID in the input
+                if (document.activeElement.tagName === 'INPUT') return;
+                event.preventDefault(); // Prevent page from jumping down
+                document.getElementById('snapBtn').click();
+            }
         });
     </script>
 </body>

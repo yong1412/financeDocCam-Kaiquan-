@@ -13,8 +13,13 @@
         input { padding: 12px; font-size: 16px; border: none; border-radius: 6px; outline: none; width: 100%; box-sizing: border-box; }
         button { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; background: #007bff; color: white; transition: 0.2s; width: 100%; box-sizing: border-box;}
         button:hover { background: #0056b3; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
         #snapBtn { background: #28a745; }
         #snapBtn:hover { background: #218838; }
+        #statusMsg { margin: 0; font-size: 14px; font-weight: bold; min-height: 18px; }
+        .text-info { color: #17a2b8; }
+        .text-success { color: #28a745; }
+        .text-error { color: #dc3545; }
         
         /* Display the incoming video nicely on the laptop */
         video { width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 2px solid #333; }
@@ -33,6 +38,7 @@
         <div class="controls">
             <input type="text" id="phoneIdInput" placeholder="Enter Phone ID">
             <button id="connectBtn">Connect</button>
+            <p id="statusMsg"></p>
             <button id="snapBtn">📸 Take High-Res Screenshot</button>
         </div>
     </div>
@@ -42,11 +48,21 @@
     <script>
         const peer = new Peer(); 
         const remoteVideo = document.getElementById('remoteVideo');
+        const statusMsg = document.getElementById('statusMsg');
+        const connectBtn = document.getElementById('connectBtn');
         let dataConnection;
+
+        function setStatus(msg, type) {
+            statusMsg.textContent = msg;
+            statusMsg.className = `text-${type}`;
+        }
         
-        document.getElementById('connectBtn').addEventListener('click', () => {
+        connectBtn.addEventListener('click', () => {
             const phoneId = document.getElementById('phoneIdInput').value.trim();
             if (!phoneId) return alert("Please enter the Phone ID");
+
+            setStatus("Connecting...", "info");
+            connectBtn.disabled = true;
 
             // Connect to send text data/signals alongside media
             dataConnection = peer.connect(phoneId);
@@ -59,7 +75,14 @@
 
             call.on('stream', (phoneStream) => {
                 remoteVideo.srcObject = phoneStream;
+                setStatus("Connected successfully!", "success");
+                connectBtn.disabled = false;
             });
+        });
+
+        peer.on('error', (err) => {
+            setStatus(`Connection failed: ${err.type || err.message}`, "error");
+            connectBtn.disabled = false;
         });
 
         // The Screenshot Engine
